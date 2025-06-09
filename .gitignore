@@ -1,5 +1,7 @@
 __pycache__/
 .pytest_cache/
 *.txt
-*lst
-*pti
+*.lst
+*.pti
+*.log
+*.TMP
