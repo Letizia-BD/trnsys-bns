@@ -1,5 +1,5 @@
- _pycache_/
- .pytest_cache/
- *.txt
- *lst
- *pti
+__pycache__/
+.pytest_cache/
+*.txt
+*lst
+*pti
