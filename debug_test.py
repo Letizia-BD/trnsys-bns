@@ -1,77 +1,40 @@
-# Python module for the TRNSYS Type calling Python using CFFI
-# Data exchange with TRNSYS uses a dictionary, called TRNData in this file (it is the argument of all functions).
-# Data for this module will be in a nested dictionary under the module name,
-# i.e. if this file is calle "MyScript.py", the inputs will be in TRNData["MyScript"]["inputs"]
-# for convenience the module name is saved in thisModule
-#
-# MKu, 2022-02-15
-
+import pytest
 import os
-# 1️⃣ Set environment variables for Julia
+
+# ✅ correct variable name
 os.environ["JULIA_BINDIR"] = r"C:\Users\ITM User\AppData\Local\Programs\Julia-1.11.5\bin"
 os.environ["JULIA_DEPOT_PATH"] = r"C:\MyJuliaDepot"
 os.environ["JULIA_NUM_THREADS"] = "1"
-
-# os.environ["JULIA_BINDIR"] = r"C:\Users\ITM User\AppData\Local\Programs\Julia-1.11.5\bin"
-# os.environ['JULIA_NUM_THREDS'] = '1'
-# os.environ['OPENBLAS_NUM_THREDS'] = '1'
-# os.environ['OMKL_NUM_THREDS'] = '1'
 from juliacall import Main as jl
 from juliacall import Pkg as jlPkg
 import pathlib
-import sys
+import sys, os
 
 import io
 import contextlib
-
 # path = jl.Base.find_package("BoreholeNetworksSimulator")
 
 # sys.path.insert(1, "C:/BoreholeNetworksSimulator.jl")
-# sys.path.insert(1, "C:/BNS2/BoreholeNetworksSimulator.jl")
-
-# parent_path = os.path.dirname(path)            # → ".../src"
-# grandparent_path = os.path.dirname(parent_path)  # →
+# sys.path.insert(1, "C:/Users/ITM User/.julia/packages/BoreholeNetworksSimulator/G7Ojx")
 
 
-# sys.path.insert(1, "C:/TRNSYS18/BoreholeNetworksSimulator.jl")
-
-# 2️⃣ Initialize Julia (once at DLL startup)
+print(jl.seval('DEPOT_PATH'))            # where Julia looks for packages
+print(jl.seval('Base.load_path()'))      # LOAD_PATH used for `using`
+print(jl.seval('Base.find_package("BoreholeNetworksSimulator")'))  # returns path or nothing
+print(jl.seval('using Pkg; Pkg.status()'))  # shows installed packages in current environment
 jl.seval("""
 using BoreholeNetworksSimulator
 """)
-# jl.seval("""
-# using DataStructures
-# """)
+# parent_path = os.path.dirname(path)            # → ".../src"
+# grandparent_path = os.path.dirname(parent_path)  # →
 sys.path.insert(1, r"C:\MyJuliaDepot\packages\BoreholeNetworksSimulator\G7Ojx")
 import BNSPythonAdapter.src.adapter
 
-
 import numpy as np
 import pandas as pd
-
 from openpyxl import load_workbook
 
-thisModule = os.path.splitext(os.path.basename(__file__))[0]
-
-
-
-
-# Initialization: function called at TRNSYS initialization
-# ---------------------------------------------------------------------------------------------------------------------
-def Initialization(TRNData):
-    global operator
-    global options
-    global containers
-    global Nb
-    global mass_flows
-    global StepOperator
-    global activation_step
-    global T_initial
-    global Nb1
-    global N1
-    global simulate_safe
-    global method
-
+def python_results():
     # Load the borehole properties
     wb = load_workbook("GeoInput.xlsx")
     sheet = wb['Borehole']
@@ -165,8 +128,7 @@ def Initialization(TRNData):
 
     configurations = jl.Vector([network_1, network_2])
 
-    # method = jl.OriginalNonHistoryMethod()
-    method = jl.ConvolutionMethod()
+
     medium = jl.GroundMedium(λ=λ, α=alpha, T0=T0)
 
     py_boreholes = []
@@ -180,9 +142,27 @@ def Initialization(TRNData):
     # Create the borefield object 
     borefield = jl.HeterogeneousBorefield(boreholes=boreholes, positions=positions)
 
+    # D = 0.              # Borehole buried depth (m)
+    # H = 150.            # Borehole active length (m)
+
+    # Nb = 4              # Number of boreholes. Obs! If you change this value you have to change the positions and networks 
+    # σ = 5.                              # Distance between boreholes
+
+    # positions = jl.Array[jl.Tuple[jl.Float64, jl.Float64]]([(0., 0.), (0., σ),(σ, 0.), (σ, σ)])     # Coordinates of the two boreholes
+    # # Create the borehole object 
+    # borehole = jl.SingleUPipeBorehole(H=H, D=D)
+
+    # # Create the borefield object 
+    # borefield = jl.EqualBoreholesBorefield(borehole_prototype=borehole, positions=positions)
+
+
     # Define the boundary condition
     T_initial = jl.Array[jl.Float64]([Tin for i in range(1, Nt+1)])
     constraint = jl.uniform_InletTempConstraint(T_initial, Nb)
+
+    # method = jl.NonHistoryMethod()
+    # method = jl.OriginalNonHistoryMethod()
+    method = jl.ConvolutionMethod()
 
     options = jl.SimulationOptions(
         method = method,
@@ -232,101 +212,25 @@ def Initialization(TRNData):
 
 
     operator = StepOperator(mass_flows, activation_step,Nb)
+    Tout = []
+
+    for i in range(0,Nt):
+        Tin = -3
+        m = 1.2
+
+        operator.update(Tin, m)
+
+        jl.simulate_steps_b(n = 1, initial_step = i, operator=operator, options=options, containers=containers)
+
+        if i < activation_step:
+            Tout.append(np.mean(containers.X[1:N1*2+1:2, i-1]))
+        else:
+            Tout.append(np.mean(containers.X[1:Nb*2+1:2, i-1]))
+        
+
+    with open("Tout_python_debug.txt", "w") as f:
+        f.write(",".join(map(str, Tout)))
 
 
-    return
-
-
-# StartTime: function called at TRNSYS starting time (not an actual time step, initial values should be reported)
-# ----------------------------------------------------------------------------------------------------------------------
-def StartTime(TRNData):
-
-    return
-
-# Iteration: function called at each TRNSYS iteration within a time step
-# ----------------------------------------------------------------------------------------------------------------------
-def Iteration(TRNData):
-
-    Tin = TRNData[thisModule]["inputs"][0]
-    m = TRNData[thisModule]["inputs"][1]
-
-    
-    operator.update(Tin, m)
-
-    stepNo = TRNData[thisModule]["current time step number"]
-
-
-    # jl.simulate_steps_b(n = 1, initial_step = stepNo, operator=operator, options=options, containers=containers)
-    # simulate_safe(stepNo, operator, options, containers)
-
-    jl.simulate_steps_b(n = 1, initial_step = stepNo, operator=operator, options=options, containers=containers)
-    if stepNo < activation_step:
-        Tout = containers.X[1:N1*2+1:2, stepNo-1]  
-
-    else:
-        Tout = containers.X[1:Nb*2+1:2, stepNo-1]
-
-
-    # # Set outputs in TRNData
-    # # TRNData[thisModule]["outputs"][0] = containers.X[2 * Nb, stepNo -1] -> is this thte borehole temperature?
-
-    with open("Result.txt","a") as file:
-        file.write(str(np.mean(Tout))+"\n")
-    # --- Outlet temperature assuming equally distributed flow among the boreholes ---
-    TRNData[thisModule]["outputs"][0] = np.mean(Tout)
-    # TRNData[thisModule]["outputs"][1] = Q_tot[stepNo -1]
-
-
-
-    return
-
-
-# EndOfTimeStep: function called at the end of each time step, after iteration and before moving on to next time step
-# ----------------------------------------------------------------------------------------------------------------------
-def EndOfTimeStep(TRNData):
-
-    # This model has nothing to do during the end-of-step call
-    
-    return
-
-
-# LastCallOfSimulation: function called at the end of the simulation (once) - outputs are meaningless at this call
-# ----------------------------------------------------------------------------------------------------------------------
-def LastCallOfSimulation(TRNData):
-
-    with open("Q1.txt","a") as file:
-        print(containers.X[3 * Nb, :], file=file)
-    with open("Q2.txt","a") as file:
-        print(containers.X[3 * Nb+1, :], file=file)
-    with open("Q3.txt","a") as file:
-        print(containers.X[3 * Nb+2, :], file=file)
-    with open("Q4.txt","a") as file:
-        print(containers.X[3 * Nb+3, :], file=file)
-    # with open("Tf_out.txt","a") as file:
-    #     print(containers.X[2 * Nb, :], file=file)
-
-    # with open("x2.txt","a") as file:
-    #     print(containers.X[ Nb, :], file=file)
-    # with open("x3.txt","a") as file:
-    #     print(containers.X[ Nb+1, :], file=file)
-    # with open("x0.txt","a") as file:
-    #     print(containers.X[ 0, :], file=file)
-    # with open("x1.txt","a") as file:
-    #     print(containers.X[ 1, :], file=file)
-    # with open("x4.txt","a") as file:
-    #     print(containers.X[ Nb+2, :], file=file)
-    # with open("x5.txt","a") as file:
-    #     print(containers.X[ Nb+3, :], file=file)
-    # NOTE: TRNSYS performs this call AFTER the executable (the online plotter if there is one) is closed. 
-    # Python errors in this function will be difficult (or impossible) to diagnose as they will produce no message.
-    # A recommended alternative for "end of simulation" actions it to implement them in the EndOfTimeStep() part, 
-    # within a condition that the last time step has been reached.
-    #
-    # Example (to be placed in EndOfTimeStep()):
-    #
-    # stepNo = TRNData[thisModule]["current time step number"]
-    # nSteps = TRNData[thisModule]["total number of time steps"]
-    # if stepNo == nSteps-1:     # Remember: TRNSYS steps go from 0 to (number of steps - 1)
-    #     do stuff that needs to be done only at the end of simulation
-
-    return
+if __name__ == "__main__":
+    python_results()
