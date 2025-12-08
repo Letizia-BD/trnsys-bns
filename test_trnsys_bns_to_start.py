@@ -1,14 +1,11 @@
 import subprocess           # to run the TRNSYS simulation
-import shutil               # to duplicate the output txt file
-import time                 # to measure the computation time
-import pytest               # for testing
-import pandas as pd
-import numpy as np
-from numpy.testing import assert_array_equal
-from openpyxl import load_workbook
-import pygfunction as gt
-from scipy.optimize import minimize_scalar
+import pytest
+import os
 
+# ✅ correct variable name
+os.environ["JULIA_BINDIR"] = r"C:\Users\ITM User\AppData\Local\Programs\Julia-1.11.5\bin"
+os.environ["JULIA_DEPOT_PATH"] = r"C:\MyJuliaDepot"
+os.environ["JULIA_NUM_THREADS"] = "1"
 from juliacall import Main as jl
 from juliacall import Pkg as jlPkg
 import pathlib
@@ -18,14 +15,21 @@ import io
 import contextlib
 
 
-path = jl.Base.find_package("BoreholeNetworksSimulator")
-
-sys.path.insert(1, "C:/BoreholeNetworksSimulator.jl")
-# sys.path.insert(1, "C:/Users/ITM User/.julia/packages/BoreholeNetworksSimulator/lIOHB")
-
-parent_path = os.path.dirname(path)            # → ".../src"
-grandparent_path = os.path.dirname(parent_path)  # →
+# print(jl.seval('DEPOT_PATH'))            # where Julia looks for packages
+# print(jl.seval('Base.load_path()'))      # LOAD_PATH used for `using`
+# print(jl.seval('Base.find_package("BoreholeNetworksSimulator")'))  # returns path or nothing
+# print(jl.seval('using Pkg; Pkg.status()'))  # shows installed packages in current environment
+# jl.seval("""
+# using BoreholeNetworksSimulator
+# """)
+# parent_path = os.path.dirname(path)            # → ".../src"
+# grandparent_path = os.path.dirname(parent_path)  # →
+sys.path.insert(1, r"C:\MyJuliaDepot\packages\BoreholeNetworksSimulator\G7Ojx")
 import BNSPythonAdapter.src.adapter
+
+import numpy as np
+import pandas as pd
+from openpyxl import load_workbook
 
 
 def trnsys_results():
@@ -64,7 +68,6 @@ def python_results():
     unique_years = set(activation_year_list)
     num_unique_years = len(unique_years) 
 
-
     if num_unique_years !=2:
         sys.exit("Error: The number of unique activation years must be exactly 2.")
 
@@ -86,7 +89,7 @@ def python_results():
     # Time step in seconds
     dt =  3600.
     # Number of time steps (
-    Nt = 43800
+    Nt = 26280
     # Simulation step at which the second netork starts
     activation_step = int(list(unique_years)[1] * 8760 * 3600./dt)
 
@@ -95,7 +98,9 @@ def python_results():
     m = 1.2
 
     # Need to check about possible fluids
-    fluid = jl.Water()
+    sheet = wb['Fluid']
+    fluid_name= sheet['A2'].value
+    fluid = jl.seval(f"{fluid_name}()")
 
     # positions = jl.Array[jl.Tuple[jl.Float64, jl.Float64]]([(0., 0.), (0., σ)])
     positions = jl.Array[jl.Tuple[jl.Float64, jl.Float64]]([
@@ -127,7 +132,11 @@ def python_results():
 
     configurations = jl.Vector([network_1, network_2])
 
-    method = jl.NonHistoryMethod()
+    if max(H_list) > 150:
+        method = jl.ConvolutionMethod()
+    else:
+        method = jl.OriginalNonHistoryMethod()
+        
     medium = jl.GroundMedium(λ=λ, α=alpha, T0=T0)
 
     py_boreholes = []
@@ -215,17 +224,20 @@ def python_results():
 
 
 def test_bns():
-    
+
+    # Create results with pygfunction
+    T_python = python_results()
+
     # Create results with trnsys
     trnsys_results()
     results_trnsys = pd.read_csv('Tout.txt', sep=r'\s+', skiprows=1, names=["TIME", "Tout"])
     T_trnsys = np.array(results_trnsys['Tout'])
-
-    # Create results with pygfunction
-    T_python = python_results()
 
     # Compare
     np.testing.assert_allclose(T_python, T_trnsys[1:], atol=1e-3)  
 
 if __name__ == "__main__":
     pytest.main()
+
+
+
