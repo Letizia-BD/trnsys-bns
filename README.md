@@ -71,7 +71,7 @@ II. Run the following commands inside Python, pressing enter after each line:
 ### 3. Install Julia
 
 1. Download the **Julia 1.11.5** release from [julialang.org]([https://www.python.org](https://julialang.org/downloads/oldreleases/))
-   ⚠️  OBS: if you donwload a different version this module may not work! 
+>   ⚠️  OBS: if you donwload a different version this module may not work! 
 3. During the installation, make sure to check the box: 
 
         Add Julia to PATH
