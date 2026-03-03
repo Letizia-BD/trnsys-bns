@@ -20,7 +20,7 @@ The simulation time step and total simulation duration are configured as usual i
 ## Detailed installation
 Details about how to configure **Python 3.10** and the **TRNSYS Add-On** are available in the user guide: https://trnsys.de/static/77828438acd0697c30be234f0f248eff/Calling-Python-from-TRNSYS-with-CFFI.pdf
 
-Below is a simplified step-by-step guide.
+Below is a simplified step-by-step guide including all the steps needed for this specific component.
 
 ### 1. Add the TRNSYS Add-On to TRNSYS 18 
 1. Go to the [TRNSYS Add-Ons page](https://trnsys.de/en/addons-en) and search for **"Calling Python CFFI Type 3157"**
@@ -32,6 +32,12 @@ Below is a simplified step-by-step guide.
 3. Extract the contents of the ZIP archive into your **TRNSYS installation directory**. Default location:
 
         C:\TRNSYS18
+
+   You should now have a folder similar to:
+
+        C:\TRNSYS18\TRNLib\CallingPython-Cffi\Examples
+
+   This is the folder where you will install the new component in step 5.
 
 ### 2. Install python 3.10
 > ⚠️ To follow these instructions you need Python 3.10 exactly. It is ok to have other Python versions installed at the same time.
@@ -70,7 +76,8 @@ II. Run the following commands inside Python, pressing enter after each line:
 
 ### 3. Install Julia
 
-1. Download the **Julia 1.11.5** release from [julialang.org]([https://www.python.org](https://julialang.org/downloads/oldreleases/))
+1. Download the **Julia 1.11.5** release from [julialang.org](https://julialang.org/downloads/oldreleases/). Version 1.11.5 is among the old releases.
+ 
 >   ⚠️  OBS: if you donwload a different version this module may not work! 
 3. During the installation, make sure to check the box: 
 
@@ -82,10 +89,11 @@ II. Run the following commands inside Python, pressing enter after each line:
 
        using Pkg;
        pkg"registry add https://github.com/marcbasquensmunoz/geothermal_registry";
+       pkg"registry add General";
        Pkg.add("BoreholeNetworksSimulator")
 
 ### 5. Download the model from GitHub
-Through your **Command Prompt**, navigate to the folder containing the examples installed together with the CallingPython-Cffi Add-On. Default location:
+Through your **Command Prompt**, navigate to the folder containing the examples installed together with the CallingPython-Cffi Add-On (keep reading to see how to navigate to a folder through the command prompt). Default location:
 
         C:\TRNSYS18\TRNLib\CallingPython-Cffi\Examples
 
@@ -93,8 +101,13 @@ Through your **Command Prompt**, navigate to the folder containing the examples 
 1. To navigate to the folder through the Command Prompt write:
 
         cd <your actual location>
+
+   For example:
+   
+       cd C:\TRNSYS18\TRNLib\CallingPython-Cffi\Examples
+   
         
-2. Clone this GitHub repository into that folder, still in the Command Prompt run:
+3. Clone this GitHub repository into that folder, still in the Command Prompt run:
 
         git clone https://github.com/Letizia-BD/trnsys-bns.git
 
@@ -119,6 +132,68 @@ In the **Command Prompt**, run these commands **one at a time**, pressing Enter 
             py -3.10 -m pip install scipy==1.15.3
             py -3.10 -m pip install pandas==2.2.3
             py -3.10 -m pip install juliacall==0.9.25
+
+### 6. Fix existing bugs
+
+#### Bug 1
+In the BoreholeNetworksSimulator Julia package there is currently a bug that needs to be fixed manually. You can typically find the folder containing an installed Julia package in a directory like:
+
+           C:\Users\user\.julia\packages
+
+1. Open the Julia package and find the file **HeterogeneousBorefield.jl**. It will be in a directory similar to:
+
+           C:\Users\user\.julia\packages\BoreholeNetworksSimulator\G7Ojx\src\modular\borefields
+
+2. In the file  **HeterogeneousBorefield.jl** change line
+
+           initial_ΔT::Vector{S} = zeros(S, Nb)
+
+   into:
+
+           initial_ΔT::Vector{S} = zeros(Nb)
+
+#### Bug 2
+This bug has been recorded only for some installations. Proceed with these instructions only if you present the same bug. You understand if you have this bug by continuing with the instructions in step **7. First simulation**. If while running the **debug_file.py** as specified in **7. First simulation** you get an error mentioning **absolute valve**. Do the following:
+
+1. In the file **network.jl** (in the folder BoreholeNetworksSimulator -  the file will be in a directory similar to: C:\Users\user\.julia\packages\BoreholeNetworksSimulator\G7Ojx\src\modular\network) the line:
+
+        function absolute_valve(nodes::Vector{Int}, mass_flows::Vector{T}) where {T <: Number}
+
+should be changed into:
+
+        function absolute_valve(nodes::AbstractVector{Int}, mass_flows::AbstractVector{T}) where {T <: Number}
+
+2. In the file **topology.jl** (in the folder BoreholeNetworksSimulator -  the file will be in a directory similar to: C:\Users\user\.julia\packages\BoreholeNetworksSimulator\G7Ojx\src\modular\core) the line:
+
+        parents = inneighbours(network.graph, bh_in)
+
+should be changed into:
+
+        parents = filter(i -> i ≠ source(network), inneighbors(network.graph, bh_in))
+
+### 7. First simulation
+
+In the folder **trnsys-bns** (it should be in a location similar to C:\TRNSYS18\TRNLib\CallingPython-Cffi\Examples\trnsys-bns), you can find the file **debug_file.py**. Run* this python script to check if you can use the BoreholeNetworksSimulator package through Julia and Python. This is necessary to use this TRNSYS component.
+
+*to run the python script you can:
+
+1. navigate to the trns-bns directory through the command prompt:
+
+        cd <directory_name>
+
+   for example:
+
+        cd C:\TRNSYS18\TRNLib\CallingPython-Cffi\Examples\trnsys-bns
+
+2. type:
+
+           python debug_file.py
+
+   and press enter.
+
+If everything works properly a new file will appear in the **trnsys-bns** folder named **Tout_python_debug.txt**. 
+
+If you get an error message mentioning **absolute_valve**, check how to fix bug 2 in step 6.
 
 >✅ After completing these steps, your environment is ready to run the trnsys-bns Model.
 
