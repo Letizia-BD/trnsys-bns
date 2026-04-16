@@ -1,45 +1,58 @@
-import subprocess           # to run the TRNSYS simulation
+import subprocess           
 import pytest
-import os
-
-# ✅ correct variable name
-os.environ["JULIA_BINDIR"] = r"C:\Users\ITM User\AppData\Local\Programs\Julia-1.11.5\bin"
-os.environ["JULIA_DEPOT_PATH"] = r"C:\MyJuliaDepot"
-os.environ["JULIA_NUM_THREADS"] = "1"
+import os, io
+from pathlib import Path
 from juliacall import Main as jl
 from juliacall import Pkg as jlPkg
 import pathlib
 import sys, os
-
-import io
 import contextlib
-
-
-# print(jl.seval('DEPOT_PATH'))            # where Julia looks for packages
-# print(jl.seval('Base.load_path()'))      # LOAD_PATH used for `using`
-# print(jl.seval('Base.find_package("BoreholeNetworksSimulator")'))  # returns path or nothing
-# print(jl.seval('using Pkg; Pkg.status()'))  # shows installed packages in current environment
-# jl.seval("""
-# using BoreholeNetworksSimulator
-# """)
-# parent_path = os.path.dirname(path)            # → ".../src"
-# grandparent_path = os.path.dirname(parent_path)  # →
-sys.path.insert(1, r"C:\MyJuliaDepot\packages\BoreholeNetworksSimulator\G7Ojx")
-import BNSPythonAdapter.src.adapter
-
 import numpy as np
 import pandas as pd
 from openpyxl import load_workbook
 
+bindir = subprocess.check_output(
+    ["julia", "-e", "print(Sys.BINDIR)"],
+    text=True
+).strip()
+os.environ["JULIA_BINDIR"] = bindir
+
+path = Path(jl.Base.find_package("BoreholeNetworksSimulatorFork"))
+pkg_root = path.parents[1] 
+sys.path.insert(0, str(pkg_root))
+import BNSPythonAdapter.src.adapter
+
+jl.seval("""
+using BoreholeNetworksSimulatorFork
+""")
+script_dir = Path(__file__).parent.resolve()
 
 def trnsys_results():
     deck_file_name = 'bns.dck'
+    trnsys_home = os.environ.get("TRNSYS_HOME")
+
+    possible_dirs = [
+    r"C:\TRNSYS18\Exe\TRNExe64.exe",
+    r"C:\Program Files\TRNSYS18\Exe\TRNExe64.exe",
+]
+
+    for exe_path in possible_dirs:
+        exe = Path(exe_path)
+        if exe.exists():
+            trnsys_exe = exe
+            break
+    else:
+        raise FileNotFoundError("TRNExe64.exe not found in common locations")
     
-    subprocess.run([r"C:\Trnsys18\Exe\TRNExe64.exe",r"C:\TRNSYS18\TRNLib\CallingPython-Cffi\Examples\trnsys-bns\bns.dck","/h"])
+    
+    deck_file = script_dir / "bns.dck"
+    deck_file_path = str(deck_file)
+
+    subprocess.run([str(trnsys_exe), deck_file_path,"/h"])
 
 def python_results():
     # Load the borehole properties
-    wb = load_workbook("GeoInput.xlsx")
+    wb = load_workbook(str(script_dir /"GeoInput.xlsx"))
     sheet = wb['Borehole']
 
     filled_rows = 0
@@ -91,7 +104,7 @@ def python_results():
     # Number of time steps (
     Nt = 26280
     # Simulation step at which the second netork starts
-    activation_step = int(list(unique_years)[1] * 8760 * 3600./dt)
+    activation_step = int((list(unique_years)[1]-1) * 8760 * 3600./dt)
 
     # Inlet temperature to the borehole(s) to initialize the model. Can be overwritten at each time step.
     Tin = -3. # [degC]
@@ -237,7 +250,8 @@ def test_bns():
     np.testing.assert_allclose(T_python, T_trnsys[1:], atol=1e-3)  
 
 if __name__ == "__main__":
-    pytest.main()
+    # pytest.main()
+    pytest.main([sys.argv[0]])
 
 
 
