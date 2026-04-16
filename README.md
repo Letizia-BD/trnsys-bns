@@ -66,7 +66,9 @@ III. Add two new Paths (make sure that you use the correct paths, the two paths 
         py -3.10 -m pip install cffi
 
 If you succesfull installed numpy and cffi continue to section "Download the model from GitHub". Otherwise, **if the two previous commands did not work**, install the numpy and cffi libraries from Python:
+
 I. Open Python 3.10
+
 II. Run the following commands inside Python, pressing enter after each line:
 
         import sys
@@ -88,9 +90,9 @@ II. Run the following commands inside Python, pressing enter after each line:
    Start Julia and type the following commands **one at a time**, pressing Enter after each:
 
        using Pkg;
-       pkg"registry add https://github.com/marcbasquensmunoz/geothermal_registry";
+       pkg"registry add https://github.com/Bengt-Dahlgren-Stockholm-Geo/geothermal_registryFork";
        pkg"registry add General";
-       Pkg.add("BoreholeNetworksSimulator")
+       Pkg.add("BoreholeNetworksSimulatorFork")
 
 ### 5. Download the model from GitHub
 Through your **Command Prompt**, navigate to the folder containing the examples installed together with the CallingPython-Cffi Add-On (keep reading to see how to navigate to a folder through the command prompt). Default location:
@@ -132,44 +134,6 @@ In the **Command Prompt**, run these commands **one at a time**, pressing Enter 
             py -3.10 -m pip install scipy==1.15.3
             py -3.10 -m pip install pandas==2.2.3
             py -3.10 -m pip install juliacall==0.9.25
-
-### 6. Fix existing bugs
-
-#### Bug 1
-In the BoreholeNetworksSimulator Julia package there is currently a bug that needs to be fixed manually. You can typically find the folder containing an installed Julia package in a directory like:
-
-           C:\Users\user\.julia\packages
-
-1. Open the Julia package and find the file **HeterogeneousBorefield.jl**. It will be in a directory similar to:
-
-           C:\Users\user\.julia\packages\BoreholeNetworksSimulator\G7Ojx\src\modular\borefields
-
-2. In the file  **HeterogeneousBorefield.jl** change line
-
-           initial_ΔT::Vector{S} = zeros(S, Nb)
-
-   into:
-
-           initial_ΔT::Vector{S} = zeros(Nb)
-
-#### Bug 2
-This bug has been recorded only for some installations. Proceed with these instructions only if you present the same bug. You understand if you have this bug by continuing with the instructions in step **7. First simulation**. If while running the **debug_file.py** as specified in **7. First simulation** you get an error mentioning **absolute valve**. Do the following:
-
-1. In the file **network.jl** (in the folder BoreholeNetworksSimulator -  the file will be in a directory similar to: C:\Users\user\.julia\packages\BoreholeNetworksSimulator\G7Ojx\src\modular\network) the line:
-
-        function absolute_valve(nodes::Vector{Int}, mass_flows::Vector{T}) where {T <: Number}
-
-should be changed into:
-
-        function absolute_valve(nodes::AbstractVector{Int}, mass_flows::AbstractVector{T}) where {T <: Number}
-
-2. In the file **topology.jl** (in the folder BoreholeNetworksSimulator -  the file will be in a directory similar to: C:\Users\user\.julia\packages\BoreholeNetworksSimulator\G7Ojx\src\modular\core) the line:
-
-        parents = inneighbours(network.graph, bh_in)
-
-should be changed into:
-
-        parents = filter(i -> i ≠ source(network), inneighbors(network.graph, bh_in))
 
 ### 7. First simulation
 
