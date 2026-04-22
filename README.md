@@ -1,4 +1,4 @@
-# Goethermal boreholes in parallel with updated configuration
+# Geothermal boreholes in parallel with updated configuration
 This repository contains a TRNSYS component for simulating geothermal borehole fields connected in parallel and installed in two separate phases. The boreholes may have different lengths and can be positioned at arbitrary locations within the field. 
 
 The component is implemented in Python as a [Type 3157](https://trnsys.de/static/77828438acd0697c30be234f0f248eff/Calling-Python-from-TRNSYS-with-CFFI.pdf). It relies on the [BoreholeNetoworksSimulator](https://github.com/marcbasquensmunoz/BoreholeNetworksSimulator.jl) library for modeling thermal interactions within the borefield. 
@@ -16,6 +16,11 @@ An Excel interface (`GeoInput.xlsx`) allows users to easily modify borehole prop
 This makes it straightforward to set up and customize your geothermal simulation without modifying the Python code directly.
 
 The simulation time step and total simulation duration are configured as usual in TRNSYS by adjusting the settings in the `.tpf` file.
+
+## Table of Contents
+
+- [Detailed installation](#detailed-installation)
+- [Usage](#usage)
 
 ## Detailed installation
 Details about how to configure **Python 3.10** and the **TRNSYS Add-On** are available in the user guide: https://trnsys.de/static/77828438acd0697c30be234f0f248eff/Calling-Python-from-TRNSYS-with-CFFI.pdf
@@ -163,7 +168,36 @@ If everything works properly a new file will appear in the **trnsys-bns** folder
 
 If the following message appears when running a simulation with this TRNSYS component, make sure to run **debug_file.py**. For most users it is enough to run it once after the installation, but it may be necessary to run it after the computer is restarted.
 
-![Error message: [...]trnsys-bns\--version does not exist](images/issues_versionNoExist.png)
+<!-- ![Error message: [...]trnsys-bns\--version does not exist](images/issues_versionNoExist.png) -->
+<img src="images/issues_versionNoExist.png" alt="Error message: [...]trnsys-bns\--version does not exist" width="300"/>
+
+## Usage
+
+Use the **GeoInput.xlsx** file to define your borehole field, including:
+
+- geometrical characteristics of the boreholes
+- ground properties
+- circulating fluid
+
+See the example below:
+<!--
+![Set the geometrical boreholes properties](images/Excel_BHs.png)
+![Set the ground properties](images/Excel_ground.png)
+![Select the circulating fluid](images/Excel_fluid.png)
+-->
+<div style="display:flex; gap:15px; align-items:flex-start;">
+<img src="images/Excel_BHs.png" alt="Set the geometrical boreholes properties" width="300"/>
+<img src="images/Excel_ground.png" alt="Set the ground properties" width="300"/>
+<img src="images/Excel_fluid.png" alt="Select the circulating fluid" width="300"/>
+</div>
+
+
+
+>   ⚠️  OBS: the component allows any number of boreholes, but only **ONE** borehole expansion. Therefore, there can be maximum 2 unique activation years. 
+
+The simulation time and time step are set as usual for a TRNSYS simulation. 
+
+>   ⚠️  OBS: The unit for time and time steps **MUST BE** hours for the component to work correctly. 
 
 
 
