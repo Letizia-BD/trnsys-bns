@@ -159,6 +159,12 @@ If everything works properly a new file will appear in the **trnsys-bns** folder
 
 >✅ After completing these steps, your environment is ready to run the trnsys-bns Model.
 
+### 8. Known issues
+
+If the following message appears when running a simulation with this TRNSYS component, make sure to run **debug_file.py**. For most users it is enough to run it once after the installation, but it may be necessary to run it after the computer is restarted.
+
+![Error message: [...]trnsys-bns\--version does not exist](images/issues_versionNoExist.png)
+
 
 
 
