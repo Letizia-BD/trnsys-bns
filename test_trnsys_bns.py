@@ -229,16 +229,16 @@ def python_results():
         else:
             Tout.append(np.mean(containers.X[1:Nb*2+1:2, i-1]))
         
-
-    with open("Tout_python.txt", "w") as f:
-        f.write(",".join(map(str, Tout)))
+    # Unnecessary to write the results to a file, but can be useful for debugging
+    # with open("Tout_python.txt", "w") as f:
+    #     f.write(",".join(map(str, Tout)))
 
     return np.array(Tout)
 
 
 def test_bns():
 
-    # Create results with pygfunction
+    # Create results with BoreholeNetworksSimulatorFork
     T_python = python_results()
 
     # Create results with trnsys
