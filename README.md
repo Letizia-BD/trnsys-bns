@@ -65,7 +65,7 @@ III. Add two new Paths (make sure that you use the correct paths, the two paths 
         py -3.10 -m pip install numpy 
         py -3.10 -m pip install cffi
 
-If you succesfull installed numpy and cffi continue to section "Download the model from GitHub". Otherwise, **if the two previous commands did not work**, install the numpy and cffi libraries from Python:
+If you succesfull installed numpy and cffi continue to section "Install Julia". Otherwise, **if the two previous commands did not work**, install the numpy and cffi libraries from Python:
 
 I. Open Python 3.10
 
@@ -156,8 +156,6 @@ In the folder **trnsys-bns** (it should be in a location similar to C:\TRNSYS18\
    and press enter.
 
 If everything works properly a new file will appear in the **trnsys-bns** folder named **Tout_python_debug.txt**. 
-
-If you get an error message mentioning **absolute_valve**, check how to fix bug 2 in step 6.
 
 >✅ After completing these steps, your environment is ready to run the trnsys-bns Model.
 
