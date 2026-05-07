@@ -116,7 +116,7 @@ Through your **Command Prompt**, navigate to the folder containing the examples 
         
 3. Clone this GitHub repository into that folder, still in the Command Prompt run:
 
-        git clone https://github.com/Letizia-BD/trnsys-bns.git
+        git clone https://github.com/Bengt-Dahlgren-Stockholm-Geo/trnsys-bns
 
 If you have succesfully cloned the repository a new folder has been created inside "C:\TRNSYS18\TRNLib\CallingPython-Cffi\Examples" (or your equivalent location). You can proceed to section "Install the specific Python dependencies for this model".
 
