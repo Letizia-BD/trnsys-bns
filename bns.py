@@ -129,8 +129,6 @@ def Initialization(TRNData):
     network_2 = jl.BoreholeNetwork(Nb)
     for i in range(Nb):
         jl.connect_to_source_b(network_2, i+1)
-        jl.connect_to_source_b(network_2, i+1)
-        jl.connect_to_sink_b(network_2, i+1)
         jl.connect_to_sink_b(network_2, i+1)
 
     configurations = jl.Vector([network_1, network_2])
@@ -232,7 +230,7 @@ def Iteration(TRNData):
         Q = containers.X[3*Nb:3*Nb+N1,stepNo-1] # Avg active field load [W/m]
         TRNData[thisModule]["outputs"][3] = np.mean(Q) *sum(H_list[0:N1])
         Q1 = containers.X[3*Nb:3*Nb+N1,stepNo-1] # Avg field 1 load [W/m]
-        Q2 = containers.X[3*Nb +N1+1:4*Nb,stepNo-1] # Avg field 2 load [W/m]
+        Q2 = containers.X[3*Nb +N1:4*Nb,stepNo-1] # Avg field 2 load [W/m]
         # Q0 = containers.X[3*Nb,stepNo-1] # 1st borehole
         # Q1 = containers.X[3*Nb+1,stepNo-1] # 2nd borehole
         # Q2 = containers.X[3*Nb+2,stepNo-1] # 3rd borehole
@@ -245,7 +243,7 @@ def Iteration(TRNData):
         Q = containers.X[3*Nb:4*Nb,stepNo-1] # Avg active field load [W/m]
         TRNData[thisModule]["outputs"][3] = np.mean(Q) *sum(H_list)
         Q1 = containers.X[3*Nb:3*Nb+N1,stepNo-1] # Avg field 1 load [W/m]
-        Q2 = containers.X[3*Nb +N1+1:4*Nb,stepNo-1] # Avg field 2 load [W/m]
+        Q2 = containers.X[3*Nb +N1:4*Nb,stepNo-1] # Avg field 2 load [W/m]
         # Q0 = containers.X[3*Nb,stepNo-1] # 1st borehole
         # Q1 = containers.X[3*Nb+1,stepNo-1] # 2nd borehole
         # Q2 = containers.X[3*Nb+2,stepNo-1] # 3rd borehole
@@ -254,13 +252,18 @@ def Iteration(TRNData):
     TRNData[thisModule]["outputs"][1] = np.mean(Tin)
     TRNData[thisModule]["outputs"][2] = np.mean(m)
 
+
+
     # with open("Result.txt","a") as file:
     #     file.write(str(np.mean(Tout))+"\n")
     # --- Outlet temperature assuming equally distributed flow among the boreholes ---
     
-    # TRNData[thisModule]["outputs"][3] = np.mean(Q) 
     TRNData[thisModule]["outputs"][4] = np.mean(Q1) *sum(H_list[0:N1])
     TRNData[thisModule]["outputs"][5] = np.mean(Q2) *sum(H_list[N1:Nb])
+
+    # TRNData[thisModule]["outputs"][3]=0
+    # TRNData[thisModule]["outputs"][4] = 0
+    # TRNData[thisModule]["outputs"][5] = 0
     return
 
 
